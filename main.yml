@@ -50,6 +50,10 @@
       when: configure_vscode | default(true)
       tags: ['vscode']
 
+    - import_tasks: tasks/git.yml
+      when: configure_git
+      tags: ['git']
+
     - name: Run post-provision task files in a block.
       tags: ['post']
       block:

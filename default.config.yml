@@ -3,6 +3,11 @@ configure_dotfiles: true
 configure_terminal: true
 configure_osx: true
 
+# Git configuration
+configure_git: true
+git_user_name: "Noel Augustin"
+git_user_email: "noel.noelaugustin@gmail.com"
+
 # Set to 'true' to configure the Dock via dockutil.
 configure_dock: false
 dockitems_remove: []

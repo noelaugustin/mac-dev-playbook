@@ -1,0 +1,16 @@
+---
+- name: Configure git user name
+  git_config:
+    name: user.name
+    scope: global
+    value: "{{ git_user_name }}"
+  tags:
+    - git
+
+- name: Configure git user email
+  git_config:
+    name: user.email
+    scope: global
+    value: "{{ git_user_email }}"
+  tags:
+    - git
