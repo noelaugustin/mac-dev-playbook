@@ -1,0 +1,8 @@
+---
+- name: Copy VS Code settings.json to user profile
+  copy:
+    src: .vscode/settings.json
+    dest: "{{ lookup('env','HOME') }}/Library/Application Support/Code/User/settings.json"
+    backup: yes
+  tags:
+    - vscode

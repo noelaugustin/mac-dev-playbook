@@ -46,6 +46,10 @@
       when: configure_sublime
       tags: ['sublime-text']
 
+    - import_tasks: tasks/vscode.yml
+      when: configure_vscode | default(true)
+      tags: ['vscode']
+
     - name: Run post-provision task files in a block.
       tags: ['post']
       block:
