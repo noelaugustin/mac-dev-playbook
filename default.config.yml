@@ -127,5 +127,24 @@ sublime_package_control:
   - "TrailingSpaces"
   - "WordingStatus"
 
+# Docker context configuration
+configure_docker_context: false
+docker_context_verify: true
+docker_context_use_ssh_agent: false  # Set to true for Bitwarden SSH agent or other SSH agents
+docker_context_ssh_key_path: "~/.ssh/id_rsa"  # Ignored when using SSH agent
+docker_context_default: "default"
+docker_contexts: []
+# Example Docker contexts configuration:
+# docker_contexts:
+#   - name: "production"
+#     host: "prod-docker.example.com"
+#     user: "deploy"
+#     port: 22
+#     description: "Production Docker environment"
+#   - name: "staging"
+#     host: "staging-docker.example.com"
+#     user: "deploy"
+#     description: "Staging Docker environment"
+
 # Glob pattern to ansible task files to run after all other tasks are finished.
 post_provision_tasks: []

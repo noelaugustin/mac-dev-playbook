@@ -54,6 +54,10 @@
       when: configure_git
       tags: ['git']
 
+    - import_tasks: tasks/docker-context.yml
+      when: configure_docker_context
+      tags: ['docker-context']
+
     - name: Run post-provision task files in a block.
       tags: ['post']
       block:

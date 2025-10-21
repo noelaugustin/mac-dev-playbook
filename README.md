@@ -42,7 +42,7 @@ If you need to supply an SSH password (if you don't use SSH keys), make sure to 
 
 ### Running a specific set of tagged tasks
 
-You can filter which part of the provisioning process to run by specifying a set of tags using `ansible-playbook`'s `--tags` flag. The tags available are `dotfiles`, `homebrew`, `mas`, `extra-packages` and `osx`.
+You can filter which part of the provisioning process to run by specifying a set of tags using `ansible-playbook`'s `--tags` flag. The tags available are `dotfiles`, `homebrew`, `mas`, `extra-packages`, `osx`, and `docker-context`.
 
     ansible-playbook main.yml -K --tags "dotfiles,homebrew"
 
@@ -86,6 +86,19 @@ dockitems_persist:
   - name: "Sublime Text"
     path: "/Applications/Sublime Text.app/"
     pos: 5
+
+configure_docker_context: true
+docker_contexts:
+  - name: "production"
+    host: "prod-docker.example.com"
+    user: "deploy"
+    port: 22
+    description: "Production Docker environment"
+  - name: "staging"
+    host: "staging-docker.example.com"
+    user: "deploy"
+    description: "Staging Docker environment"
+docker_context_default: "production"
 ```
 
 Any variable can be overridden in `config.yml`; see the supporting roles' documentation for a complete list of available variables.
@@ -138,6 +151,86 @@ Packages (installed with Homebrew):
 My [dotfiles](https://github.com/geerlingguy/dotfiles) are also installed into the current user's home directory, including the `.osx` dotfile for configuring many aspects of macOS for better performance and ease of use. You can disable dotfiles management by setting `configure_dotfiles: no` in your configuration.
 
 Finally, there are a few other preferences and settings added on for various apps and services.
+
+## Docker Context Configuration
+
+This playbook can configure SSH-based Docker contexts to manage remote Docker environments. This is useful for connecting to Docker hosts on remote servers, development environments, or cloud instances.
+
+### Prerequisites
+
+1. **Docker installed** on your local Mac (included in the default homebrew applications)
+2. **SSH access** to the remote Docker host
+3. **SSH authentication** configured using either:
+   - SSH key-based authentication with key files, OR
+   - SSH agent (like Bitwarden SSH agent, ssh-agent, etc.)
+4. **Docker daemon running** on the remote host
+
+### Configuration
+
+To enable Docker context configuration, set `configure_docker_context: true` in your `config.yml` and define your Docker contexts:
+
+**For traditional SSH key files:**
+```yaml
+configure_docker_context: true
+docker_context_use_ssh_agent: false
+docker_context_ssh_key_path: "~/.ssh/id_rsa"  # Path to your SSH private key
+docker_context_default: "production"          # Default context to use
+docker_context_verify: true                   # Verify connections after setup
+docker_contexts:
+  - name: "production"
+    host: "prod-docker.example.com"
+    user: "deploy"
+    port: 22
+    description: "Production Docker environment"
+```
+
+**For Bitwarden SSH agent or other SSH agents:**
+```yaml
+configure_docker_context: true
+docker_context_use_ssh_agent: true           # Use SSH agent instead of key files
+docker_context_default: "production"         # Default context to use
+docker_context_verify: true                  # Verify connections after setup
+docker_contexts:
+  - name: "production"
+    host: "prod-docker.example.com"
+    user: "deploy"
+    port: 22
+    description: "Production Docker environment"
+  - name: "staging"
+    host: "staging-docker.example.com" 
+    user: "deploy"
+    description: "Staging Docker environment"
+```
+
+### Usage
+
+After running the playbook with Docker context configuration:
+
+```bash
+# Run only Docker context configuration
+ansible-playbook main.yml -K --tags "docker-context"
+
+# List available contexts
+docker context ls
+
+# Switch between contexts
+docker context use production
+docker context use staging
+docker context use default  # Local Docker
+
+# Verify current context
+docker info
+```
+
+The playbook will:
+- Verify Docker is installed
+- Check SSH authentication method (key file or SSH agent)
+- Validate SSH agent connectivity (for Bitwarden SSH agent users)
+- Create the defined Docker contexts
+- Set the default context (if specified)
+- Verify connections to remote Docker hosts
+
+**Note for Bitwarden SSH agent users:** Make sure your Bitwarden SSH agent is running and has the necessary SSH keys loaded before running the playbook. The playbook will check `ssh-add -l` to verify SSH agent connectivity.
 
 ## Full / From-scratch setup guide
 

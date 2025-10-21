@@ -15,6 +15,17 @@ dockitems_persist: []
 #   path: "/Applications/Sublime Text.app/"
 #   pos: 5
 
+
+configure_docker_context: true
+docker_context_use_ssh_agent: true  # This is the key setting for Bitwarden
+docker_context_default: "ratlab"
+docker_contexts:
+  - name: "ratlab"
+    host: "ratlab"
+    user: "naugustin"
+    description: "WSL2 Docker on RatLab"
+
+
 configure_sudoers: false
 sudoers_custom_config: ""
 # Example:
@@ -43,6 +54,7 @@ homebrew_installed_packages:
   - kubectx
   - htop
   - kind
+  - rustrover
 
 
 homebrew_taps: []

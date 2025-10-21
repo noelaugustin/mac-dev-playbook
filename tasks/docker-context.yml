@@ -1,0 +1,129 @@
+---
+- name: Check if Docker is installed
+  command: which docker
+  register: docker_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - docker-context
+
+- name: Ensure Docker is installed before configuring contexts
+  fail:
+    msg: "Docker is not installed. Please install Docker first."
+  when: docker_check.rc != 0
+  tags:
+    - docker-context
+
+- name: Check if SSH key exists for Docker context (skip for SSH agents)
+  stat:
+    path: "{{ docker_context_ssh_key_path }}"
+  register: ssh_key_check
+  when: 
+    - docker_context_ssh_key_path is defined
+    - not docker_context_use_ssh_agent | default(false)
+  tags:
+    - docker-context
+
+- name: Warning about SSH key
+  debug:
+    msg: "SSH key not found at {{ docker_context_ssh_key_path }}. Ensure SSH key exists and is configured properly."
+  when: 
+    - docker_context_ssh_key_path is defined 
+    - not docker_context_use_ssh_agent | default(false)
+    - ssh_key_check is defined
+    - not ssh_key_check.stat.exists
+  tags:
+    - docker-context
+
+- name: Check SSH agent connectivity for Bitwarden or other SSH agents
+  shell: ssh-add -l
+  register: ssh_agent_check
+  failed_when: false
+  changed_when: false
+  when: docker_context_use_ssh_agent | default(false)
+  tags:
+    - docker-context
+
+- name: Display SSH agent status
+  debug:
+    msg: |
+      SSH Agent Status: {{ 'Available' if ssh_agent_check.rc == 0 else 'Not available or no keys loaded' }}
+      {% if ssh_agent_check.rc == 0 %}
+      Loaded keys: {{ ssh_agent_check.stdout_lines | length }}
+      {% else %}
+      Make sure your SSH agent (Bitwarden, ssh-agent, etc.) is running and has keys loaded.
+      {% endif %}
+  when: 
+    - docker_context_use_ssh_agent | default(false)
+    - ssh_agent_check is defined
+  tags:
+    - docker-context
+
+- name: Create SSH-based Docker contexts
+  shell: >
+    docker context create {{ item.name }} 
+    --docker "host=ssh://{{ item.user }}@{{ item.host }}{% if item.port is defined %}:{{ item.port }}{% endif %}"
+    {% if item.description is defined %}--description "{{ item.description }}"{% endif %}
+  args:
+    creates: "~/.docker/contexts/meta/{{ item.name }}/meta.json"
+  loop: "{{ docker_contexts }}"
+  when: docker_contexts is defined and docker_contexts | length > 0
+  register: context_creation
+  failed_when: 
+    - context_creation.rc != 0
+    - "'already exists' not in context_creation.stderr"
+  tags:
+    - docker-context
+
+- name: List available Docker contexts
+  command: docker context ls
+  register: docker_context_list
+  changed_when: false
+  when: docker_contexts is defined and docker_contexts | length > 0
+  tags:
+    - docker-context
+
+- name: Display Docker contexts
+  debug:
+    var: docker_context_list.stdout_lines
+  when: 
+    - docker_contexts is defined 
+    - docker_contexts | length > 0
+    - docker_context_list is defined
+  tags:
+    - docker-context
+
+- name: Set default Docker context
+  command: docker context use {{ docker_context_default }}
+  when: 
+    - docker_context_default is defined
+    - docker_context_default != "default"
+    - docker_contexts is defined 
+    - docker_contexts | length > 0
+  tags:
+    - docker-context
+
+- name: Verify Docker context connection
+  command: docker info
+  register: docker_info_check
+  changed_when: false
+  failed_when: false
+  when: 
+    - docker_contexts is defined 
+    - docker_contexts | length > 0
+    - docker_context_verify | default(true)
+  tags:
+    - docker-context
+
+- name: Display Docker connection status
+  debug:
+    msg: |
+      Docker context verification: {{ 'SUCCESS' if docker_info_check.rc == 0 else 'FAILED' }}
+      {% if docker_info_check.rc != 0 %}
+      Error: {{ docker_info_check.stderr }}
+      {% endif %}
+  when: 
+    - docker_info_check is defined
+    - docker_context_verify | default(true)
+  tags:
+    - docker-context
